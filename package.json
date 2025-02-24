@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "dev": "rollup --config rollup.config.mjs --watch",
+    "build": "rollup --config rollup.config.mjs"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "rollup": "^4.17.2",
+    "rollup-plugin-copy": "^3.5.0",
+    "rollup-plugin-jscc": "^2.0.0"
+  }
+}

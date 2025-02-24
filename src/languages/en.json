@@ -1,0 +1,133 @@
+{
+  "tokenActionHud": {
+    "black-flag": {
+      "advantage": "Advantage",
+      "ammunition": "Ammunition",
+      "armour": "Armour",
+      "basic": "Basic",
+      "character": "Character",
+      "characteristic": "Characteristic",
+      "characteristics": "Characteristics",
+      "combat": "Combat",
+      "conditions": "Conditions",
+      "consumables": "Consumables",
+      "containers": "Containers",
+      "extendedTests": "Extended Tests",
+      "grimoires": "Grimoires",
+      "inventory": "Inventory",
+      "item": "Item",
+      "magic": "Magic",
+      "manualEffects": "Manual Effects",
+      "testIndependentEffects": "Test Independent Effects",
+      "prayersBlessings": "Blessings",
+      "prayersMiracles": "Miracles",
+      "scrolls": "Magic Scrolls",
+      "skills": "Skills",
+      "skillsAdvanced": "Advanced Skills",
+      "skillsBasic": "Basic Skills",
+      "spells": "Spells",
+      "spellsArcane": "Arcane Spells",
+      "spellsPetty": "Petty Spells",
+      "talents": "Talents",
+      "token": "Token",
+      "traits": "Traits",
+      "trappings": "Trappings",
+      "utility": "Utility",
+      "weapons": "Weapons",
+
+      "actions": {
+        "rollInitiative": "Roll for Initiative",
+        "makeItemPile": "Convert to Item Pile",
+        "makeItemPiles": "Convert to Item Piles",
+        "revertItemPile": "Revert from Item Pile",
+        "revertItemPiles": "Revert from Item Piles",
+        "toggleItemPiles": "Toggle Item Piles",
+        "toggleDisposition": "Toggle Disposition",
+        "checkCareer": "Check Career Progress",
+        "checkEquipment": "Check Equipment",
+        "restRecover": "Rest and Recover",
+        "incomeRoll": "Roll for Income",
+        "increaseAdvantage": "Increase Advantage",
+        "decreaseAdvantage": "Decrease Advantage",
+
+        "advantage": {
+          "batter": "Batter",
+          "trick": "Trick",
+          "additionalEffort": "Additional Effort",
+          "fleeFromHarm": "Flee from Harm",
+          "additionalAction": "Additional Action"
+        },
+
+        "awardXP": {
+          "awardXP": "Award XP",
+          "DialogTitle": "",
+          "Amount": "Amount",
+          "Reason": "Reason",
+          "Award": "Award",
+          "XPNaN": "XP must be a number!",
+          "ReasonEmpty": "Reason must not be empty!"
+        }
+      },
+
+      "tooltips": {
+        "AP": "Armour Points",
+        "CN": "Spell's CN",
+        "ChannellingSL": "Channelling SL",
+        "CharacteristicValue": "Characteristic Value",
+        "ConditionRating": "Condition Rating",
+        "Encumbrance": "Encumbrance",
+        "ExtendedTestTarget": "Current SL / Target SL",
+        "HighestAP": "Highest AP",
+        "ManualInvoke": "Invoke Effect",
+        "ManualInvokeTarget": "Invoke Target Effect",
+        "ManualInvokeArea": "Invoke Area Effect",
+        "Radius": "Invoke Area Radius",
+        "Quantity": "Quantity",
+        "Shield": "Shield",
+        "Skill": "Tested Skill",
+        "SpellDamage": "Spell's Damage",
+        "TB": "Toughness Bonus",
+        "TestTarget": "Test Target",
+        "TraitDamage": "Trait Damage",
+        "WeaponDamage": "Weapon Damage"
+      },
+
+      "groupAdvantage": {
+        "CannotUse": "Cannot use „{action}” Action. It costs {cost} Advantage and you only have {advantage}.",
+        "GroupAdvantage": "Group Advantage",
+
+        "Batter": {
+          "DefenderWon": "Defender won the <em>Batter</em>!",
+          "AttackerWon": "Attacker won the <em>Batter</em> and applied <b>Prone</b> to their enemy!",
+          "DefenderAdvantage": "Defender gains 1 Advantage."
+        },
+
+        "Trick": {
+          "DefenderWon": "Defender won the <em>Trick</em> and gains 1 Advantage!",
+          "AttackerWon": "Attacker won the <em>Trick</em> and gains 1 Advantage! Additionally, if GM allows, they can apply a single Condition of choice to the enemy: @Condition[ablaze]{Ablaze}, @Condition[blinded]{Blinded} or @Condition[entangled]{Entangled}."
+        },
+
+        "AdditionalEffort": {
+          "DialogText": "Select how much Advantage you want to use. You can use any integer value between {min} and {max}.",
+          "DialogTitle": "How much Advantage to use?",
+          "CantSpendLess": "Cannot spend less Advantage on Additional Effort than minimum!"
+        }
+      },
+
+      "settings": {
+        "debug": {
+          "Enable": "Debug",
+          "EnableHint": "Enable console debug outputs. (client setting)"
+        },
+        "groupGear": {
+          "name": "Group Gear",
+          "hint": "Whether to display Gear grouped into tabs by category. If disabled, Gear types will display as lists."
+        },
+        "maxCharacters": {
+          "name": "Max Characters",
+          "hint": "Maximum number of characters displayed in Action names. Set 0 to disable trimming."
+        }
+      }
+    }
+  }
+}
