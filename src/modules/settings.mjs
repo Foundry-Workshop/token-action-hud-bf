@@ -1,4 +1,5 @@
 import {constants, settings} from './constants.mjs';
+import {Debug} from "./utility/Debug.mjs";
 
 /**
  *
@@ -27,4 +28,6 @@ export function registerSettingsCoreUpdate(coreUpdate) {
       coreUpdate(value)
     }
   })
+
+  Debug.registerSetting();
 }

@@ -18,9 +18,19 @@ Hooks.once('i18nInit', () => {
   DEFAULTS = {
     layout: [
       {
+        nestId: 'categoryChecksSaves',
+        id: 'categoryChecksSaves',
+        name: game.i18n.localize('tokenActionHud.black-flag.checks-saves'),
+        groups: [
+          {...groups.checks, nestId: 'categoryChecksSaves_abilityChecks'},
+          {...groups.saves, nestId: 'categoryChecksSaves_abilitySaves'},
+          {...groups.skills, nestId: 'categoryChecksSaves_skills'},
+        ]
+      },
+      {
         nestId: 'categoryInventory',
         id: 'categoryInventory',
-        name: game.i18n.localize('tokenActionHud.black-flag.inventory'),
+        name: game.i18n.localize('BF.Sheet.Tab.Inventory'),
         groups: [
           {...groups.weapons, nestId: 'categoryInventory_weapons'},
           {...groups.armor, nestId: 'categoryInventory_armor'},

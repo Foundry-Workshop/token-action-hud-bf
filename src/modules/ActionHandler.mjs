@@ -1,5 +1,4 @@
 import {settings, tah} from "./constants.mjs";
-import {testOptions} from "./actionHelpers.mjs";
 import {getSetting} from "./utility/Utility.mjs";
 
 export let ActionHandlerBlackFlag = null
@@ -62,6 +61,8 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
      * @private
      */
     async #buildCharacterActions() {
+      await this.#buildAbilities();
+      await this.#buildSkills();
       await this.#buildInventory();
       await this.#buildUtility();
     }
@@ -72,9 +73,83 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
      * @returns {object}
      */
     async #buildMultipleTokenActions() {
+      await this.#buildAbilities();
+      await this.#buildSkills();
       await this.#buildUtility();
     }
 
+    async #buildAbilities() {
+
+      await this.#buildAbilitiesGroup("ability", "checks");
+      await this.#buildAbilitiesGroup("save", "saves");
+    }
+
+    async #buildAbilitiesGroup(actionType, groupId) {
+      const abilities = this.actor?.system.abilities || CONFIG.BlackFlag.abilities;
+
+      const isCheck = groupId === "checks";
+      const isSave = groupId === "saves";
+
+      const actions = Object.entries(abilities)
+        .filter(ability => abilities[ability[0]].value !== 0)
+        .map(([abilityId, ability]) => {
+          const labels = CONFIG.BlackFlag.abilities[abilityId].labels;
+          const name = game.i18n.localize(isCheck ? labels.full : labels.abbreviation);
+          const label = isSave
+            ? game.i18n.format("BF.Ability.Action.SaveSpecificShort", {ability: name})
+            : name;
+          const mod = isSave ? ability?.save?.mod : ability?.check?.mod;
+          const proficiency = isSave ? ability?.save?.proficiency : ability?.check?.proficiency
+
+          return {
+            id: `${actionType}-${abilityId}`,
+            name: label,
+            icon1: this.#getProficiencyIcon(proficiency),
+            info1: (this.actor && mod) ? {
+              text: coreModule.api.Utils.getModifier(mod),
+              title: `${game.i18n.localize("BF.Armor.Modifier.Label")}: ${coreModule.api.Utils.getModifier(mod)}`
+            } : null,
+            info2: (this.actor && ability.value) ? {
+              text: `(${ability.value})`,
+              title: `${game.i18n.localize("BF.Ability.Score.Label[one]")}: ${ability.value}`
+            } : null,
+            listName: this.#getListName(actionType, name),
+            tooltip: isSave
+              ? game.i18n.format("BF.Ability.Action.SaveSpecificShort", {ability: name})
+              : game.i18n.format("BF.Ability.Action.CheckSpecific", {ability: name}),
+            system: {actionType, actionId: abilityId}
+          };
+        });
+
+      // Add actions to action list
+      this.addActions(actions, {id: groupId});
+    }
+
+    async #buildSkills() {
+      const skills = this.actor?.system.proficiencies.skills || CONFIG.BlackFlag.skills;
+
+      const actions = Object.entries(skills)
+        .filter(skill => skills[skill[0]].value !== 0)
+        .map(([skillId, skill]) => {
+          const name = game.i18n.localize(CONFIG.BlackFlag.skills[skillId].label);
+
+          return {
+            id: `skill-${skillId}`,
+            name: name,
+            icon1: this.#getProficiencyIcon(skill.proficiency),
+            info1: (this.actor) ? {
+              text: coreModule.api.Utils.getModifier(skill.mod),
+              title: `${game.i18n.localize("BF.Armor.Modifier.Label")}: ${coreModule.api.Utils.getModifier(skill.mod)}`
+            } : null,
+            listName: this.#getListName("skill", name),
+            tooltip: game.i18n.format("BF.Skill.Action.CheckSpecific", {skill: name}),
+            system: {actionType: "skill", actionId: skillId}
+          };
+        });
+
+      // Add actions to action list
+      this.addActions(actions, {id: "skills"});
+    }
 
     /**
      * Build inventory
@@ -99,7 +174,7 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
                 groupData: {
                   id: type,
                   name: itemData.system.type.label,
-                  listName: `Trapping: ${itemData.system.type.label}`,
+                  listName: this.#getListName(type, itemData.system.type.label),
                   type: 'system',
                   settings: {
                     style: this.#groupGear ? 'tab' : 'list'
@@ -133,7 +208,7 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
         groupData: {
           id: item._id,
           name: item.name,
-          listName: `Container: ${item.name}`,
+          listName: this.#getListName('container', item.name),
           type: 'system',
           icon1: '<i class="fas fa-box-open></i>',
           settings: {
@@ -189,37 +264,12 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       for (let group in actionData) {
         const types = actionData[group];
         const actions = Object.values(types).map(action => {
-          const id = action.id;
           const name = action.name;
-          const onClick = action.onClick;
           const actionTypeName = `${coreModule.api.Utils.i18n(tah.actions[actionType])}: ` ?? '';
-          const listName = `${actionTypeName}${name}`;
-          const info1 = {};
-          let cssClass = '';
 
-          if (id === 'initiative' && game.combat) {
-            const tokenIds = canvas.tokens.controlled.map((token) => token.id);
-            const combatants = game.combat.combatants.filter((combatant) => tokenIds.includes(combatant.tokenId));
+          action.listName = this.#getListName(actionType, name);
 
-            // Get initiative for single token
-            if (combatants.length === 1) {
-              const currentInitiative = combatants[0].initiative;
-              info1.class = 'tah-spotlight';
-              info1.text = currentInitiative;
-            }
-
-            const active = combatants.length > 0 && (combatants.every((combatant) => combatant?.initiative)) ? ' active' : '';
-            cssClass = `toggle${active}`;
-          }
-
-          return {
-            id,
-            name,
-            onClick,
-            info1,
-            cssClass,
-            listName
-          }
+          return action;
         })
 
         const groupData = {id: group, type: 'system'}
@@ -250,55 +300,44 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
         }
       }
 
-      if (!this.actor || !game.combat || game.combat?.current?.tokenId !== this.token?.id) delete combatTypes.endTurn
+      if (game.combat) {
+        const tokenIds = canvas.tokens.controlled.map((token) => token.id);
+        const combatants = game.combat.combatants.filter((combatant) => tokenIds.includes(combatant.tokenId));
+
+        // Get initiative for single token
+        if (combatants.length === 1) {
+          const currentInitiative = combatants[0].initiative;
+          combatTypes.initiative.info1 = {
+            class: 'tah-spotlight',
+            text: currentInitiative,
+          }
+        }
+
+        const active = combatants.length > 0 && (combatants.every((combatant) => combatant?.initiative)) ? ' active' : '';
+        combatTypes.initiative.cssClass = `toggle${active}`;
+      }
+
+      if (!this.actor || !game.combat || game.combat?.current?.tokenId !== this.token?.id) delete combatTypes.endTurn;
 
       return {'combat': combatTypes};
     }
 
 
     async #buildUtilityCharacter() {
-      const characterTypes = {
-        restRecover: {
-          id: 'restRecover',
-          name: game.i18n.localize('tokenActionHud.black-flag.actions.restRecover'),
+      const characterTypes = {}
+
+
+      for (const [type, config] of Object.entries(CONFIG.BlackFlag.rest.types)) {
+        characterTypes[type + "Rest"] = {
+          id: type,
+          name: game.i18n.localize(config.label),
+          tooltip: game.i18n.localize(config.hint),
           onClick: async () => {
             for (const actor of this.actors) {
-              let skill = actor.itemTypes.skill.find(s => s.name === game.i18n.localize("NAME.Endurance"));
-              let options = foundry.utils.mergeObject(testOptions(), {rest: true, tb: actor.characteristics.t.bonus});
-
-              if (skill)
-                actor.setupSkill(skill, options).then(setupData => actor.basicTest(setupData));
-              else
-                actor.setupCharacteristic("t", options).then(setupData => actor.basicTest(setupData))
+              actor.rest({type});
             }
           }
-        },
-        incomeRoll: {
-          id: 'incomeRoll',
-          name: game.i18n.localize('tokenActionHud.black-flag.actions.incomeRoll'),
-          onClick: async () => {
-            for (const actor of this.actors) {
-              const career = actor.currentCareer;
-              if (!career) continue;
-              const incomeSkill = career.skills[career.incomeSkill[0]];
-
-              if (!incomeSkill || !actor.items.some(i => i.type === 'skill' && i.name === incomeSkill)) {
-                ui.notifications.error(game.i18n.localize("SHEET.SkillMissingWarning"));
-                continue;
-              }
-
-              const options = foundry.utils.mergeObject(testOptions(), {
-                title: `${incomeSkill} - ${game.i18n.localize("Income")}`,
-                income: actor.details.status,
-                career: career.toObject()
-              });
-
-              actor.setupSkill(incomeSkill, options).then(setupData => {
-                actor.basicTest(setupData)
-              });
-            }
-          }
-        },
+        }
       }
 
       return {'character': characterTypes};
@@ -384,7 +423,7 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       }
     }
 
-    #makeActionFromItem(item, actionTypeName, actionType, {image = true} = {}) {
+    #makeActionFromItem(item, actionType, {image = true} = {}) {
       const {icon1, icon2, icon3} = this.#getItemIcons(item);
 
       return {
@@ -397,7 +436,8 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
         info1: this.#getInfo1(item),
         info2: this.#getInfo2(item),
         info3: this.#getInfo3(item),
-        listName: `${actionTypeName ? `${actionTypeName}: ` : ''}${item.name}`,
+        listName: this.#getListName(actionType, item.name),
+        system: {actionType, actionId: item.id},
         tooltip: this.#getTooltip(item),
       };
     }
@@ -416,11 +456,7 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
 
         const groupData = {id: groupId, type: 'system'};
 
-        const actions = [...typeMap].map(([itemId, itemData]) => {
-          const actionTypeName = game.i18n.localize(tah.actions[actionTypeId]);
-
-          return this.#makeActionFromItem(itemData, actionTypeName, actionTypeId);
-        })
+        const actions = [...typeMap].map(([itemId, itemData]) => this.#makeActionFromItem(itemData, actionTypeId))
 
         this.addActions(actions, groupData);
       }
@@ -463,6 +499,28 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
         default:
           return info;
       }
+    }
+
+    #getProficiencyIcon(proficiency) {
+      // return proficiency?.hasProficiency ? `
+      return proficiency ? `
+        <div class="proficiency-selector" data-multiplier="${proficiency.multiplier}"
+            data-rounding="${proficiency.rounding}" aria-label="${proficiency.label}">
+                <blackFlag-icon src="systems/black-flag/artwork/interface/proficiency.svg" inert></blackFlag-icon>
+        </div>
+` : '';
+
+
+      // const title = CONFIG.DND5E.proficiencyLevels[level] ?? "";
+      // const icon = PROFICIENCY_LEVEL_ICON[level];
+      // return (icon) ? `<i class="${icon}" title="${title}"></i>` : "";
+    }
+
+    #getListName(actionType, actionName) {
+      const prefix = `${game.i18n.localize(tah.actions[actionType])}: ` ?? "";
+      actionName = game.i18n.localize(actionName);
+
+      return `${prefix}${actionName}` ?? "";
     }
 
     #getTooltip(itemData) {

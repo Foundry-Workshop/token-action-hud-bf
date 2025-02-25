@@ -1,0 +1,11 @@
+#token-action-hud {
+  .tah-icon {
+    display: flex;
+    align-items: flex-end;
+
+    .proficiency-selector {
+      --blank-color: rgba(209, 185, 163, 0.3);
+      --proficient-color: var(--tah-text-primary-color);
+    }
+  }
+}

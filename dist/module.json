@@ -57,6 +57,7 @@
     "token-action-hud-bf.mjs"
   ],
   "styles": [
+    "styles/token-action-hud-bf.css"
   ],
   "flags": {
     "hotReload": {

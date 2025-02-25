@@ -1,3 +1,10 @@
-
+#token-action-hud .tah-icon {
+  display: flex;
+  align-items: flex-end;
+}
+#token-action-hud .tah-icon .proficiency-selector {
+  --blank-color: rgba(209, 185, 163, 0.3);
+  --proficient-color: var(--tah-text-primary-color);
+}
 
 /*# sourceMappingURL=token-action-hud-bf.css.map */

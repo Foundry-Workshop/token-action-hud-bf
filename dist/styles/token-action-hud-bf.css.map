@@ -1,1 +1,1 @@
-{"version":3,"sourceRoot":"","sources":[],"names":[],"mappings":"","file":"token-action-hud-bf.css"}
+{"version":3,"sourceRoot":"","sources":["../../src/styles/token-action-hud-bf.scss"],"names":[],"mappings":"AACE;EACE;EACA;;AAEA;EACE;EACA","file":"token-action-hud-bf.css"}

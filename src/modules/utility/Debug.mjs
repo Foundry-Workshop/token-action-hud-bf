@@ -30,7 +30,7 @@ class Debug {
    * Registers the setting with the Foundry to allow users to enable Debug mode
    */
   static registerSetting() {
-    game.settings.register(constants.systemId, Debug.setting, {
+    game.settings.register(constants.moduleId, Debug.setting, {
       name: 'tokenActionHud.black-flag.settings.debug.Enable',
       hint: 'tokenActionHud.black-flag.settings.debug.EnableHint',
       scope: 'client',
@@ -46,7 +46,7 @@ class Debug {
    * @return {boolean}
    */
   static get enabled() {
-    return game.settings.get(constants.systemId, Debug.#debugSetting);
+    return game.settings.get(constants.moduleId, Debug.#debugSetting);
   }
 
   /**
@@ -55,15 +55,15 @@ class Debug {
    * @return {{}}
    */
   static get summarizeSettings() {
-    const systemSettings = {}
+    const moduleSettings = {}
     for (let [_key, setting] of game.settings.settings.entries()) {
-      if (setting.namespace !== constants.systemId) continue;
+      if (setting.namespace !== constants.moduleId) continue;
 
       const name = setting.name ? game.i18n.localize(setting.name) : setting.key;
-      systemSettings[name] = game.settings.get(constants.systemId, setting.key);
+      moduleSettings[name] = game.settings.get(constants.moduleId, setting.key);
     }
 
-    return systemSettings;
+    return moduleSettings;
   }
 }
 
