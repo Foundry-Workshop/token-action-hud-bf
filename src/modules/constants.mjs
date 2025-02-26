@@ -26,8 +26,9 @@ const tah = {
   actions: {
     ability: "tokenActionHud.black-flag.actions.ability",
     check: "tokenActionHud.black-flag.actions.check",
-    feature: "tokenActionHud.black-flag.actions.feature",
     save: "tokenActionHud.black-flag.actions.save",
+    toolCheck: "BF.Tool.Action.CheckGeneric",
+    feature: "tokenActionHud.black-flag.actions.feature",
     skill: "tokenActionHud.black-flag.actions.skill",
     spell: "tokenActionHud.black-flag.actions.spell",
     item: 'tokenActionHud.black-flag.actions.item',
@@ -39,11 +40,25 @@ const tah = {
    * Groups
    */
   groups: {
-    checks: {id: 'checks', name: 'tokenActionHud.black-flag.checks', type: 'system'},
-    saves: {id: 'saves', name: 'tokenActionHud.black-flag.saves', type: 'system'},
-    skills: {id: 'skills', name: 'tokenActionHud.black-flag.skills', type: 'system'},
+    checks: {id: 'checks', name: 'tokenActionHud.black-flag.checks', type: 'system', settings: {customWidth: 430}},
+    saves: {id: 'saves', name: 'tokenActionHud.black-flag.saves', type: 'system', settings: {customWidth: 410}},
+    skills: {id: 'skills', name: 'tokenActionHud.black-flag.skills', type: 'system', settings: {customWidth: 700}},
+    toolChecks: {id: 'toolChecks', name: 'tokenActionHud.black-flag.toolChecks', type: 'system', settings: {customWidth: 700}},
+    vehicleChecks: {id: 'vehicleChecks', name: 'tokenActionHud.black-flag.vehicleChecks', type: 'system', settings: {customWidth: 700}},
 
-    vehicle: {id: 'vehicle', name: 'BF.VEHICLE.Label[other]', type: 'system'},
+    classFeatures: {id: 'classFeatures', name: 'BF.Feature.Category.Class[other]', type: 'system'},
+    talents: {id: 'talents', name: 'BF.Item.Type.Talent[other]', type: 'system'},
+    lineageFeatures: {id: 'lineageFeatures', name: 'BF.Feature.Category.Lineage[other]', type: 'system'},
+    heritageFeatures: {id: 'heritageFeatures', name: 'BF.Feature.Category.Heritage[other]', type: 'system'},
+    monstersFeatures: {id: 'monstersFeatures', name: 'BF.Feature.Category.Monster[other]', type: 'system'},
+    vehicleFeatures: {id: 'vehicleFeatures', name: 'BF.Feature.Category.Vehicle[other]', type: 'system'},
+    features: {id: 'features', name: 'BF.Item.Type.Feature[other]', type: 'system'},
+
+    temporaryEffects: {id: 'temporaryEffects', name: 'tokenActionHud.black-flag.temporaryEffects', type: 'system'},
+    passiveEffects: {id: 'passiveEffects', name: 'tokenActionHud.black-flag.passiveEffects', type: 'system'},
+    inactiveEffects: {id: 'inactiveEffects', name: 'tokenActionHud.black-flag.inactiveEffects', type: 'system'},
+    conditions: {id: 'conditions', name: 'BF.Condition.Label[other]', type: 'system'},
+
 
     actions: {id: 'actions', name: 'BF.ACTIVATION.Type.Action[other]', type: 'system'},
 
@@ -67,6 +82,8 @@ const tah = {
    * Item types
    */
   items: {
+    feature: {groupId: 'features'},
+    talent: {groupId: 'talents'},
     ammunition: {groupId: 'ammunition'},
     armor: {groupId: 'armor'},
     container: {groupId: 'containers'},

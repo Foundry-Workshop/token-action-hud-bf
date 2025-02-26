@@ -25,6 +25,33 @@ Hooks.once('i18nInit', () => {
           {...groups.checks, nestId: 'categoryChecksSaves_abilityChecks'},
           {...groups.saves, nestId: 'categoryChecksSaves_abilitySaves'},
           {...groups.skills, nestId: 'categoryChecksSaves_skills'},
+          {...groups.toolChecks, nestId: 'categoryChecksSaves_toolChecks'},
+          {...groups.vehicleChecks, nestId: 'categoryChecksSaves_vehicleChecks'},
+        ]
+      },
+      {
+        nestId: 'categoryFeatures',
+        id: 'categoryFeatures',
+        name: game.i18n.localize('BF.Sheet.Tab.Features'),
+        groups: [
+          { ...groups.classFeatures, nestId: "categoryFeatures_classFeatures" },
+          { ...groups.talents, nestId: "categoryFeatures_talents" },
+          { ...groups.lineageFeatures, nestId: "categoryFeatures_lineageFeatures" },
+          { ...groups.heritageFeatures, nestId: "categoryFeatures_heritageFeatures" },
+          { ...groups.monstersFeatures, nestId: "categoryFeatures_monstersFeatures" },
+          { ...groups.vehicleFeatures, nestId: "categoryFeatures_vehicleFeatures" },
+          { ...groups.features, nestId: "categoryFeatures_features" },
+        ]
+      },
+      {
+        nestId: 'categoryEffects',
+        id: 'categoryEffects',
+        name: game.i18n.localize('BF.Sheet.Tab.Effects'),
+        groups: [
+          { ...groups.temporaryEffects, nestId: "categoryEffects_temporaryEffects" },
+          { ...groups.passiveEffects, nestId: "categoryEffects_passiveEffects" },
+          { ...groups.inactiveEffects, nestId: "categoryEffects_inactiveEffects" },
+          { ...groups.conditions, nestId: "categoryEffects_conditions" },
         ]
       },
       {
@@ -33,6 +60,7 @@ Hooks.once('i18nInit', () => {
         name: game.i18n.localize('BF.Sheet.Tab.Inventory'),
         groups: [
           {...groups.weapons, nestId: 'categoryInventory_weapons'},
+          {...groups.ammunition, nestId: 'categoryInventory_ammunition'},
           {...groups.armor, nestId: 'categoryInventory_armor'},
           {...groups.gear, nestId: 'categoryInventory_gear'},
           {...groups.tools, nestId: 'categoryInventory_tools'},

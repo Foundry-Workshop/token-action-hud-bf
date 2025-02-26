@@ -41,10 +41,12 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
         const physicalItems = this.actor.items.filter(i => i.system.isPhysical);
         const inventory = physicalItems.filter(i => !i.system.container);
         const itemsInContainers = physicalItems.filter(i => !!i.system.container);
+        const features = this.actor.items.filter(i => i.type === 'feature' || i.type === 'talent');
 
         this.items = coreModule.api.Utils.sortItemsByName(this.actor.items);
         this.inventory = coreModule.api.Utils.sortItemsByName(inventory);
         this.itemsInContainers = coreModule.api.Utils.sortItemsByName(itemsInContainers)
+        this.features = coreModule.api.Utils.sortItemsByName(features);
       }
 
       if (this.actor) {
@@ -63,6 +65,11 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
     async #buildCharacterActions() {
       await this.#buildAbilities();
       await this.#buildSkills();
+      await this.#buildToolChecks();
+      await this.#buildVehicleChecks();
+      await this.#buildFeatures();
+      await this.#buildEffects();
+      await this.#buildConditions();
       await this.#buildInventory();
       await this.#buildUtility();
     }
@@ -84,6 +91,7 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       await this.#buildAbilitiesGroup("save", "saves");
     }
 
+    //#region Checks & Saves
     async #buildAbilitiesGroup(actionType, groupId) {
       const abilities = this.actor?.system.abilities || CONFIG.BlackFlag.abilities;
 
@@ -91,7 +99,7 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       const isSave = groupId === "saves";
 
       const actions = Object.entries(abilities)
-        .filter(ability => abilities[ability[0]].value !== 0)
+        .filter(([key, ability]) => ability.value !== 0)
         .map(([abilityId, ability]) => {
           const labels = CONFIG.BlackFlag.abilities[abilityId].labels;
           const name = game.i18n.localize(isCheck ? labels.full : labels.abbreviation);
@@ -129,7 +137,6 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       const skills = this.actor?.system.proficiencies.skills || CONFIG.BlackFlag.skills;
 
       const actions = Object.entries(skills)
-        .filter(skill => skills[skill[0]].value !== 0)
         .map(([skillId, skill]) => {
           const name = game.i18n.localize(CONFIG.BlackFlag.skills[skillId].label);
 
@@ -147,10 +154,205 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
           };
         });
 
-      // Add actions to action list
       this.addActions(actions, {id: "skills"});
     }
 
+    async #buildToolChecks() {
+      const tools = this.actor?.system.proficiencies?.tools;
+
+      if (!tools) return;
+
+      const actions = Object.entries(tools)
+        .map(([toolId, tool]) => {
+          const name = game.i18n.localize(tool.label);
+
+          return {
+            id: `tool-${toolId}`,
+            name: name,
+            icon1: this.#getProficiencyIcon(tool.proficiency),
+            info1: (this.actor) ? {
+              text: coreModule.api.Utils.getModifier(tool.mod),
+              title: `${game.i18n.localize("BF.Armor.Modifier.Label")}: ${coreModule.api.Utils.getModifier(tool.mod)}`
+            } : null,
+            listName: this.#getListName("toolCheck", name),
+            tooltip: game.i18n.format("BF.Tool.Action.CheckSpecific", {tool: name}),
+            system: {actionType: "toolCheck", actionId: toolId}
+          };
+        });
+
+      this.addActions(actions, {id: "toolChecks"});
+    }
+
+    async #buildVehicleChecks() {
+      const vehicles = this.actor?.system.proficiencies?.vehicles;
+
+      if (!vehicles) return;
+
+      const actions = Object.entries(vehicles)
+        .map(([vehiclesId, vehicles]) => {
+          const name = game.i18n.localize(vehicles.label);
+
+          return {
+            id: `vehicle-${vehiclesId}`,
+            name: name,
+            icon1: this.#getProficiencyIcon(vehicles.proficiency),
+            info1: (this.actor) ? {
+              text: coreModule.api.Utils.getModifier(vehicles.mod),
+              title: `${game.i18n.localize("BF.Armor.Modifier.Label")}: ${coreModule.api.Utils.getModifier(vehicles.mod)}`
+            } : null,
+            listName: this.#getListName("vehicleCheck", name),
+            tooltip: game.i18n.format("BF.Vehicle.Action.CheckSpecific", {vehicle: name}),
+            system: {actionType: "vehicleCheck", actionId: vehiclesId}
+          };
+        });
+
+      this.addActions(actions, {id: "vehicleChecks"});
+    }
+
+    //#endregion
+
+    //#region Features
+    async #buildFeatures() {
+      if (this.features.size === 0) return;
+
+      const actionTypeId = 'feature';
+      const featureMap = new Map();
+      const dynamicGroups = this.#buildClassFeatureGroups();
+
+      for (const [itemKey, item] of this.features) {
+        let itemId = item._id;
+        let type = item.type;
+        let category = item.system.type.category;
+
+        if (type === 'feature') {
+          switch (category) {
+            case 'class':
+              type = item.system.identifier.associated;
+              break;
+            case 'heritage':
+              type = 'heritageFeatures';
+              break;
+            case 'lineage':
+              type = 'lineageFeatures';
+              break;
+            case 'monsters':
+              type = 'monstersFeatures';
+              break;
+            case 'vehicle':
+              type = 'vehicleFeatures';
+              break;
+            case 'talent':
+              break;
+            default:
+              continue;
+          }
+        }
+
+        const typeMap = featureMap.get(type) ?? new Map();
+        typeMap.set(itemId, item);
+        featureMap.set(type, typeMap);
+      }
+
+      await this.#addDynamicGroups(dynamicGroups);
+
+      return this.#addActionsFromMap(actionTypeId, featureMap);
+    }
+
+    #buildClassFeatureGroups() {
+      const classes = this.actor?.system.progression?.classes;
+
+      if (!classes)
+        return new Map();
+
+      return Object.entries(classes)
+        .sort((lhs, rhs) => rhs[1].levels - lhs[1].levels)
+        .reduce((acc, [identifier, cls]) => {
+          const label = game.i18n.format('BF.Feature.Category.ClassSpecific[other]', {class: cls.document.name});
+
+          acc.set(identifier, {
+            groupData: {
+              id: identifier,
+              name: label,
+              listName: this.#getListName('feature', label),
+              type: 'system',
+              settings: {customWidth: 500}
+            },
+            parentGroupData: tah.groups.classFeatures
+          });
+
+          return acc;
+        }, new Map())
+    }
+
+    //#endregion
+
+    //#region Effects
+
+    async #buildEffects() {
+      const actionType = "effect";
+
+      const effects = new Map(this.actor.allApplicableEffects().map(effect => [effect.id, effect]));
+      if (effects.size === 0) return;
+
+      const passiveEffects = new Map();
+      const temporaryEffects = new Map();
+      const inactiveEffects = new Map();
+      const statusEffectIds = new Set(CONFIG.statusEffects.map(statusEffect => statusEffect._id));
+
+      for (const [effectId, effect] of effects.entries()) {
+        if (effect.isSuppressed) continue;
+        if (statusEffectIds.has(effect.id)) continue;
+
+        if (effect.disabled) {
+          inactiveEffects.set(effectId, effect);
+        } else if (effect.isTemporary) {
+          temporaryEffects.set(effectId, effect);
+        } else {
+          passiveEffects.set(effectId, effect);
+        }
+      }
+
+      await Promise.all([
+        this.#buildActions(passiveEffects, 'effect','passiveEffects'),
+        this.#buildActions(temporaryEffects, 'effect','temporaryEffects'),
+        this.#buildActions(inactiveEffects, 'effect','inactiveEffects'),
+      ]);
+    }
+
+    async #buildConditions() {
+      if (this.tokens?.length === 0) return;
+
+      // Get conditions and exit if none exist
+      const conditions = CONFIG.statusEffects.filter(condition => condition.id !== "");
+      if (conditions.length === 0) return;
+
+      // Get actions
+      const actionType = "condition";
+      const actions = await Promise.all(conditions.map(async condition => {
+        const hasCondition = this.actors.every(actor => {
+          return actor.effects.some(effect => effect.statuses.some(status => status === condition.id)
+            && !effect?.disabled);
+        });
+        const name = game.i18n.localize(condition.label) ?? condition.name;
+        return {
+          id: condition.id,
+          name,
+          img: coreModule.api.Utils.getImage(condition),
+          cssClass: `toggle${(hasCondition) ? " active" : ""}`,
+          listName: this.#getListName(actionType, name),
+          tooltip: this.#getConditionTooltipData(condition.id, condition.name),
+          system: {actionType, actionId: condition.id}
+        };
+      }));
+
+      // Add actions to HUD
+      this.addActions(actions, {id: "conditions"});
+    }
+
+    //#endregion
+
+
+    //#region Inventory
     /**
      * Build inventory
      * @private
@@ -162,19 +364,19 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       const inventoryMap = new Map();
       const dynamicGroups = new Map();
 
-      for (const [itemKey, itemData] of this.inventory) {
-        let itemId = itemData._id;
-        let type = itemData.type;
+      for (const [itemKey, item] of this.inventory) {
+        let itemId = item._id;
+        let type = item.type;
 
         switch (type) {
           case 'gear':
-            type = itemData.system.type.category;
+            type = item.system.type.category;
             if (!dynamicGroups.get(type)) {
               dynamicGroups.set(type, {
                 groupData: {
                   id: type,
-                  name: itemData.system.type.label,
-                  listName: this.#getListName(type, itemData.system.type.label),
+                  name: item.system.type.label,
+                  listName: this.#getListName(type, item.system.type.label),
                   type: 'system',
                   settings: {
                     style: this.#groupGear ? 'tab' : 'list'
@@ -185,14 +387,14 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
             }
             break;
           case 'container':
-            await this.#buildContainer(itemData, tah.groups.containers);
+            await this.#buildContainer(item, tah.groups.containers);
             continue;
           default:
             break;
         }
 
         const typeMap = inventoryMap.get(type) ?? new Map();
-        typeMap.set(itemId, itemData);
+        typeMap.set(itemId, item);
         inventoryMap.set(type, typeMap);
       }
 
@@ -233,26 +435,30 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       const actionTypeId = 'item';
       const inventoryMap = new Map();
 
-      for (const [itemKey, itemData] of this.itemsInContainers) {
-        if (itemData.system.container !== container.id) continue;
-        let itemId = itemData._id;
-        let type = itemData.type;
+      for (const [itemKey, item] of this.itemsInContainers) {
+        if (item.system.container !== container.id) continue;
+        let itemId = item._id;
+        let type = item.type;
 
-        switch (itemData.type) {
+        switch (item.type) {
           case 'container':
-            await this.#buildContainer(itemData, container);
+            await this.#buildContainer(item, container);
             continue;
           default:
             break;
         }
 
         const typeMap = inventoryMap.get(type) ?? new Map();
-        typeMap.set(itemId, itemData);
+        typeMap.set(itemId, item);
         inventoryMap.set(type, typeMap);
       }
 
       return this.#addActionsFromMap(actionTypeId, inventoryMap, container.id);
     }
+
+    //#endregion
+
+    //#region Utility
 
     async #buildUtility() {
       const combat = await this.#buildUtilityCombat();
@@ -265,11 +471,12 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
         const types = actionData[group];
         const actions = Object.values(types).map(action => {
           const name = action.name;
-          const actionTypeName = `${coreModule.api.Utils.i18n(tah.actions[actionType])}: ` ?? '';
 
-          action.listName = this.#getListName(actionType, name);
-
-          return action;
+          return foundry.utils.mergeObject({
+            type: 'system',
+            listName: this.#getListName(actionType, name),
+            system: {actionType: "utility", actionId: action.id}
+          }, action);
         })
 
         const groupData = {id: group, type: 'system'}
@@ -281,22 +488,11 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       const combatTypes = {
         initiative: {
           id: 'initiative',
-          name: game.i18n.localize('tokenActionHud.black-flag.actions.rollInitiative'),
-          onClick: async () => {
-            for (const actor of this.actors) {
-              await actor.rollInitiative({createCombatants: true});
-            }
-
-            return Hooks.callAll('forceUpdateTokenActionHud');
-          }
+          name: game.i18n.localize('tokenActionHud.black-flag.actions.rollInitiative')
         },
         endTurn: {
           id: 'endTurn',
-          name: game.i18n.localize('tokenActionHud.endTurn'),
-          onClick: () => {
-            if (game.combat?.current?.tokenId === this.token?.id)
-              return game.combat?.nextTurn();
-          }
+          name: game.i18n.localize('tokenActionHud.endTurn')
         }
       }
 
@@ -326,17 +522,12 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
     async #buildUtilityCharacter() {
       const characterTypes = {}
 
-
       for (const [type, config] of Object.entries(CONFIG.BlackFlag.rest.types)) {
         characterTypes[type + "Rest"] = {
           id: type,
           name: game.i18n.localize(config.label),
           tooltip: game.i18n.localize(config.hint),
-          onClick: async () => {
-            for (const actor of this.actors) {
-              actor.rest({type});
-            }
-          }
+          system: {actionId: 'rest'}
         }
       }
 
@@ -354,42 +545,18 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
           if (this.token.document.flags && this.token.document.flags['item-piles']?.data.enabled) {
             tokenTypes.makeItemPile = {
               id: 'revertItemPile',
-              name: game.i18n.localize('tokenActionHud.black-flag.actions.revertItemPile'),
-              onClick: () => {
-                if (!game.modules.get('item-piles')?.active) return;
-
-                for (const token of this.tokens) {
-                  game.itempiles?.API?.revertTokensFromItemPiles([token]);
-                }
-              }
+              name: game.i18n.localize('tokenActionHud.black-flag.actions.revertItemPile')
             };
           } else {
             tokenTypes.makeItemPile = {
               id: 'makeItemPile',
-              name: game.i18n.localize('tokenActionHud.black-flag.actions.makeItemPile'),
-              onClick: () => {
-                if (!game.modules.get('item-piles')?.active) return;
-
-                for (const token of this.tokens) {
-                  game.itempiles?.API?.turnTokensIntoItemPiles([token]);
-                }
-              }
+              name: game.i18n.localize('tokenActionHud.black-flag.actions.makeItemPile')
             };
           }
         } else {
           tokenTypes.toggleItemPiles = {
             id: 'toggleItemPiles',
-            name: game.i18n.localize('tokenActionHud.black-flag.actions.toggleItemPiles'),
-            onClick: () => {
-              if (!game.modules.get('item-piles')?.active) return;
-
-              for (const token of this.tokens) {
-                if (token.document.flags['item-piles']?.data.enabled)
-                  game.itempiles?.API?.revertTokensFromItemPiles([token]);
-                else
-                  game.itempiles?.API?.turnTokensIntoItemPiles([token]);
-              }
-            }
+            name: game.i18n.localize('tokenActionHud.black-flag.actions.toggleItemPiles')
           };
         }
       }
@@ -398,23 +565,13 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
         tokenTypes.toggleDisposition = {
           id: 'toggleDisposition',
           name: game.i18n.localize('tokenActionHud.black-flag.actions.toggleDisposition'),
-          onClick: () => {
-            const dispositions = Object.values(CONST.TOKEN_DISPOSITIONS);
-
-            for (const token of this.tokens) {
-              let disposition = token.document.disposition;
-              let index = dispositions.indexOf(disposition);
-              index = (index + 1) % dispositions.length
-              disposition = dispositions[index];
-              token.document.update({disposition});
-            }
-          }
         }
       }
 
       return {'token': tokenTypes};
     }
 
+    //#endregion
 //#endregion
 
     async #addDynamicGroups(dynamicGroups) {
@@ -450,55 +607,93 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
      */
     async #addActionsFromMap(actionTypeId, inventoryMap, parentGroup = null) {
       for (const [type, typeMap] of inventoryMap) {
-        const groupId = parentGroup ?? tah.items[type]?.groupId ?? this.#findGroup({id: type})?.id;
-
-        if (!groupId) continue;
-
-        const groupData = {id: groupId, type: 'system'};
-
-        const actions = [...typeMap].map(([itemId, itemData]) => this.#makeActionFromItem(itemData, actionTypeId))
-
-        this.addActions(actions, groupData);
+        await this.#buildActions(typeMap, actionTypeId, parentGroup, type);
       }
     }
 
-    #getInfo1(itemData) {
+    async #buildActions(actionMap, actionTypeId, parentGroup, type = null) {
+      type ??= actionTypeId;
+      const groupId = parentGroup ?? tah.items[type]?.groupId ?? this.#findGroup({id: type})?.id;
+
+      if (!groupId) return;
+
+      const groupData = {id: groupId, type: 'system'};
+      const actions = [...actionMap].map(([itemId, item]) => this.#makeActionFromItem(item, actionTypeId));
+      this.addActions(actions, groupData);
+    }
+
+    #getInfo1(item) {
       const info = {
         class: '',
         text: '',
         title: ''
       };
 
-      switch (itemData.type) {
+      switch (item.type) {
+        case 'feature':
+          if (item.system.uses?.hasUses) {
+            info.text = `${item.system.uses.value}/${item.system.uses.max}`;
+            info.title = game.i18n.localize('BF.Uses.Label');
+          }
+          break;
+        case 'ammunition':
+        case 'armor':
+        case 'consumable':
+        case 'gear':
+        case 'sundry':
+        case 'tool':
+        case 'weapon':
+          if (item.system.quantity === 1) break;
+          info.text = `${item.system.quantity}`;
+          info.title = game.i18n.localize('BF.Quantity.Label');
+          break;
         default:
-          return info;
       }
+
+      return info;
     }
 
-    #getInfo2(itemData) {
+    #getInfo2(item) {
       const info = {
         class: '',
         text: '',
         title: ''
       };
 
-      switch (itemData.type) {
+      switch (item.type) {
+        case 'ammunition':
+        case 'armor':
+        case 'consumable':
+        case 'gear':
+        case 'sundry':
+        case 'tool':
+        case 'weapon':
+          if (item.system.uses?.hasUses) {
+            info.text = `${item.system.uses.value}/${item.system.uses.max}`;
+            info.title = game.i18n.localize('BF.Uses.Label');
+
+            if (item.system.uses.consumeQuantity)
+              info.title += ` (${game.i18n.localize('BF.Uses.ConsumeQuantity.Label')})`;
+          }
+          break;
         default:
-          return info;
       }
+
+      return info;
     }
 
-    #getInfo3(itemData) {
+    #getInfo3(item) {
       const info = {
         class: '',
         text: '',
         title: ''
       };
 
-      switch (itemData.type) {
+      switch (item.type) {
         default:
-          return info;
       }
+
+      return info;
     }
 
     #getProficiencyIcon(proficiency) {
@@ -523,10 +718,10 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       return `${prefix}${actionName}` ?? "";
     }
 
-    #getTooltip(itemData) {
-      switch (itemData.type) {
+    #getTooltip(item) {
+      switch (item.type) {
         default:
-          return itemData.name
+          return item.name
       }
     }
 
@@ -547,10 +742,38 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       let icon3 = null;
 
       switch (item.type) {
-        default:
+        case 'ammunition':
+        case 'armor':
+        case 'consumable':
+        case 'feature':
+        case 'gear':
+        case 'spell':
+        case 'sundry':
+        case 'tool':
+        case 'weapon':
+          if (item.system.activities?.size > 0)
+            icon1 = `<i class="fa-solid fa-crosshairs" data-tooltip="${game.i18n.localize('BF.ACTIVITY.Label[one]')}"></i>`;
+
+          if (item.system.uses?.consumeQuantity)
+            icon2 = `<i class="fa-solid fa-trash" data-tooltip="${game.i18n.localize('BF.Uses.ConsumeQuantity.Label')}"></i>`
+          break;
       }
 
       return {icon1, icon2, icon3};
+    }
+
+    #getConditionTooltipData(id, name) {
+      if (this.tooltipsSetting === "none") return "";
+
+      const condition = CONFIG.BlackFlag.conditions[id];
+
+      if (this.tooltipsSetting === "nameOnly" || !condition?.reference) return name;
+
+      const tooltip = {};
+      tooltip.content = `<section class="loading" data-uuid="${condition.reference}"><i class="fas fa-spinner fa-spin-pulse"></i></section>`;
+      tooltip.class = "black-flag black-flag-tooltip rule-tooltip";
+
+      return tooltip;
     }
   }
 })

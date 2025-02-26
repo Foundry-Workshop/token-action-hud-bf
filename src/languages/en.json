@@ -5,6 +5,11 @@
       "checks": "Ability Checks",
       "saves": "Ability Saves",
       "skills": "Skill Checks",
+      "toolChecks": "Tool Checks",
+      "vehicleChecks": "Vehicle Checks",
+      "temporaryEffects":  "Temporary Effects",
+      "passiveEffects": "Passive Effects",
+      "inactiveEffects": "Inactive Effects",
 
       "combat": "Combat",
       "character": "Character",
