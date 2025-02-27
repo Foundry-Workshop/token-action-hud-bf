@@ -29,9 +29,11 @@ For a guide on using Token Action HUD, go to: [How to Use Token Action HUD](http
 
 ## Future plans
 
+*none currently*
+
 You can **always** check current and up-to-date [planned and requested features here](https://github.com/https://github.com/Foundry-Workshop/token-action-hud-bf/issues/issues?q=is%3Aopen+is%3Aissue+label%3Aenhancement)
 
-*If you have **any** suggestion or idea on new contents, hit me up on Discord!*
+*If you have **any** suggestion or idea on new content, features and improvements, hit me up on Discord!*
 
 ## Translations
 
