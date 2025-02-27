@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.1.0
+- Initial Release
+
 ## v0.0.4
 - First release candidate
 - Added Spells Tab
