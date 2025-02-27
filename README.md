@@ -10,9 +10,14 @@
 
 Token Action HUD Black Flag is a repositionable HUD of actions for a selected token prepared specially for the black-flag system.
 
-![Token Action HUD](https://raw.githubusercontent.com/Foundry-Workshop/token-action-hud-bf/master/.github/assets/module-preview.gif)
+![Token Action HUD](https://raw.githubusercontent.com/Foundry-Workshop/token-action-hud-bf/master/.github/assets/preview.gif)
 
 ## Features
+- Make rolls directly from the HUD instead of opening your character sheet.
+- Use items from the HUD or right-click an item to open its sheet.
+- Move the HUD and choose to expand the menus up or down.
+- Unlock the HUD to customise groups and actions.
+- Add your own macros and Journal Entry and Roll Table compendiums.
 
 ## Required Modules
 
