@@ -87,6 +87,7 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
           if (!token) return;
           await this.#toggleCondition(actor, token, actionId);
           break;
+        case "spell":
         case "feature":
         case "item":
           if (this.isRenderItem()) this.renderItem(actor, actionId);

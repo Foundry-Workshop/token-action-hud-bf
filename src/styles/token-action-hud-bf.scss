@@ -8,4 +8,12 @@
       --proficient-color: var(--tah-text-primary-color);
     }
   }
+
+  .tah-info-container {
+    .tah-info {
+      &.nowrap {
+        white-space: nowrap;
+      }
+    }
+  }
 }

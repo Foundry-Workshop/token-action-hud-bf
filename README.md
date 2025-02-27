@@ -1,4 +1,4 @@
-# FoundryVTT - Token Action HUD WFRP 4e
+# FoundryVTT - Token Action HUD Black Flag
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Foundry-Workshop/token-action-hud-bf?style=for-the-badge)
 ![Foundry Core Compatible Version](https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FFoundry-Workshop%2Ftoken-action-hud-bf%2Fmaster%2Fdist%2Fmodule.json&label=Foundry%20Min%20Version&query=$.compatibility.minimum&colorB=orange&style=for-the-badge)
 ![Foundry Core Compatible Version](https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FFoundry-Workshop%2Ftoken-action-hud-bf%2Fmaster%2Fdist%2Fmodule.json&label=Foundry%20Verified&query=$.compatibility.verified&colorB=orange&style=for-the-badge)  
@@ -16,10 +16,10 @@ Token Action HUD Black Flag is a repositionable HUD of actions for a selected to
 
 ## Required Modules
 
-**IMPORTANT** — Token Action HUD WFRP 4e requires the [Token Action HUD Core](https://foundryvtt.com/packages/token-action-hud-core) module to be installed.
+**IMPORTANT** — Token Action HUD Black Flag requires the [Token Action HUD Core](https://foundryvtt.com/packages/token-action-hud-core) module to be installed.
 
 **Required Core version:**
-- TAH black-flag v0.0.1: Core v2.0
+- TAH black-flag v0.0.4: Core v2.0
 
 ## Recommended Modules
 * Token Action HUD Black Flag supports several actions from the [Item Piles](https://foundryvtt.com/packages/item-piles) modules

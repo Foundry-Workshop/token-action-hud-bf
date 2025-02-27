@@ -1,4 +1,4 @@
-import {settings, tah} from "./constants.mjs";
+import {defaults, settings, tah} from "./constants.mjs";
 import {getSetting} from "./utility/Utility.mjs";
 
 export let ActionHandlerBlackFlag = null
@@ -9,8 +9,12 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
    * @extends ActionHandler
    */
   ActionHandlerBlackFlag = class ActionHandlerBlackFlag extends coreModule.api.ActionHandler {
-    #maxCharacters;
-    #groupGear;
+    #maxCharacters = defaults.maxCharacters;
+    #groupGear = defaults.groupGear;
+    #displayUnequipped = defaults.displayUnequipped;
+    #displayActivityIcon = defaults.displayActivityIcon;
+    #showOnlyPrepared = defaults.showOnlyPrepared;
+    #showPreparedness = defaults.showPreparedness;
 
     #findGroup(data = {}) {
       if (data?.nestId) {
@@ -32,21 +36,24 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
      * @param {array} groupIds
      */
     async buildSystemActions(groupIds) {
+      this.#maxCharacters = getSetting(settings.maxCharacters);
       this.#groupGear = getSetting(settings.groupGear);
+      this.#displayUnequipped = getSetting(settings.displayUnequipped);
+      this.#displayActivityIcon = getSetting(settings.displayActivityIcon);
+      this.#showOnlyPrepared = getSetting(settings.showOnlyPrepared);
+      this.#showPreparedness = getSetting(settings.showPreparedness);
 
-      // Set items variables
-      // Declaring multiple arrays, while taking more memory for sure, should be better
-      // than having to reconvert map to array to map every time I want to filter
       if (this.actor) {
         const physicalItems = this.actor.items.filter(i => i.system.isPhysical);
-        const inventory = physicalItems.filter(i => !i.system.container);
+        const inventory = physicalItems.filter(i => !i.system.container && (this.#displayUnequipped ? true : i.system.equipped));
         const itemsInContainers = physicalItems.filter(i => !!i.system.container);
         const features = this.actor.items.filter(i => i.type === 'feature' || i.type === 'talent');
+        const spells = this.actor.items.filter(i => i.type === 'spell');
 
-        this.items = coreModule.api.Utils.sortItemsByName(this.actor.items);
         this.inventory = coreModule.api.Utils.sortItemsByName(inventory);
         this.itemsInContainers = coreModule.api.Utils.sortItemsByName(itemsInContainers)
         this.features = coreModule.api.Utils.sortItemsByName(features);
+        this.spells = coreModule.api.Utils.sortItemsByName(spells);
       }
 
       if (this.actor) {
@@ -68,6 +75,7 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       await this.#buildToolChecks();
       await this.#buildVehicleChecks();
       await this.#buildFeatures();
+      await this.#buildSpells();
       await this.#buildEffects();
       await this.#buildConditions();
       await this.#buildInventory();
@@ -85,13 +93,12 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       await this.#buildUtility();
     }
 
+    //#region Checks & Saves
     async #buildAbilities() {
-
       await this.#buildAbilitiesGroup("ability", "checks");
       await this.#buildAbilitiesGroup("save", "saves");
     }
 
-    //#region Checks & Saves
     async #buildAbilitiesGroup(actionType, groupId) {
       const abilities = this.actor?.system.abilities || CONFIG.BlackFlag.abilities;
 
@@ -313,9 +320,9 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       }
 
       await Promise.all([
-        this.#buildActions(passiveEffects, 'effect','passiveEffects'),
-        this.#buildActions(temporaryEffects, 'effect','temporaryEffects'),
-        this.#buildActions(inactiveEffects, 'effect','inactiveEffects'),
+        this.#buildActions(passiveEffects, 'effect', 'passiveEffects'),
+        this.#buildActions(temporaryEffects, 'effect', 'temporaryEffects'),
+        this.#buildActions(inactiveEffects, 'effect', 'inactiveEffects'),
       ]);
     }
 
@@ -351,6 +358,79 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
 
     //#endregion
 
+    //#region Spells
+
+
+    async #buildSpells() {
+      if (this.spells.size === 0) return;
+
+      const spellsMap = new Map();
+
+      for (const [key, item] of this.spells) {
+        if (this.#showOnlyPrepared && !item.system.prepared) continue;
+        // if (!this.#isUsableItem(item) || !this.#isUsableSpell(item)) continue;
+        let type = null;
+
+        if (item.system.linkedActivity && item.system.linkedActivity.displayInSpellbook)
+          type = "additionalSpells";
+        else if (item.system.tags.has('ritual'))
+          type = "ritualSpells"
+        else switch (item.getFlag("black-flag", "relationship.mode")) {
+          case "atWill":
+            type = "atWillSpells"; break;
+          case "innate":
+            type = "innateSpells"; break;
+          case "pact":
+            type = "pactSpells"; break;
+          default: {
+            switch (item.system.circle.base) {
+              case 0:
+                type = "cantrips"; break;
+              case 1:
+                type = "circle-1"; break;
+              case 2:
+                type = "circle-2"; break;
+              case 3:
+                type = "circle-3"; break;
+              case 4:
+                type = "circle-4"; break;
+              case 5:
+                type = "circle-5"; break;
+              case 6:
+                type = "circle-6"; break;
+              case 7:
+                type = "circle-7"; break;
+              case 8:
+                type = "circle-8"; break;
+              case 9:
+                type = "circle-9"; break;
+            }
+          }
+        }
+
+        if (!type) continue;
+
+        const circleMap = spellsMap.get(type) ?? new Map();
+        circleMap.set(key, item);
+        spellsMap.set(type, circleMap);
+      }
+
+      for (const [circle, slot] of Object.entries(this.actor.system.spellcasting.slots)) {
+        const value = slot?.value ?? '∞';
+        const max = slot?.max ?? '∞';
+
+        const groupData = {
+          id: circle,
+          info: {info1: {class: "tah-spotlight", text:  `${value}/${max}`}}
+        };
+
+        this.addGroupInfo(groupData);
+      }
+
+      return this.#addActionsFromMap('spell', spellsMap);
+    }
+
+    //#endregion
 
     //#region Inventory
     /**
@@ -636,6 +716,11 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
             info.title = game.i18n.localize('BF.Uses.Label');
           }
           break;
+        case 'spell':
+          info.class = 'nowrap';
+          info.text = item.system.range.label;
+          info.title = game.i18n.localize("BF.WEAPON.FIELDS.range.label");
+          break;
         case 'ammunition':
         case 'armor':
         case 'consumable':
@@ -647,6 +732,7 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
           info.text = `${item.system.quantity}`;
           info.title = game.i18n.localize('BF.Quantity.Label');
           break;
+
         default:
       }
 
@@ -697,18 +783,12 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
     }
 
     #getProficiencyIcon(proficiency) {
-      // return proficiency?.hasProficiency ? `
       return proficiency ? `
         <div class="proficiency-selector" data-multiplier="${proficiency.multiplier}"
             data-rounding="${proficiency.rounding}" aria-label="${proficiency.label}">
                 <blackFlag-icon src="systems/black-flag/artwork/interface/proficiency.svg" inert></blackFlag-icon>
         </div>
 ` : '';
-
-
-      // const title = CONFIG.DND5E.proficiencyLevels[level] ?? "";
-      // const icon = PROFICIENCY_LEVEL_ICON[level];
-      // return (icon) ? `<i class="${icon}" title="${title}"></i>` : "";
     }
 
     #getListName(actionType, actionName) {
@@ -719,6 +799,16 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
     }
 
     #getTooltip(item) {
+      if (this.tooltipsSetting === "none") return "";
+
+      if (this.tooltipsSetting === "full" && foundry.utils.getType(item.system.richTooltip) === "function") {
+        const tooltip = {};
+        tooltip.content = `<section class="loading" data-uuid="${item.uuid}"><i class="fas fa-spinner fa-spin-pulse"></i></section>`;
+        tooltip.class = "black-flag black-flag-tooltip item-tooltip";
+
+        return tooltip;
+      }
+
       switch (item.type) {
         default:
           return item.name
@@ -734,28 +824,49 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
     }
 
     #getItemIcons(item) {
-      const iconWeaponEquipped = '<i class="fas fa-hand"></i>';
-      const iconWeaponLoaded = '<i class="far fa-circle-dot"></i>';
-      const iconWeaponNotLoaded = '<i class="far fa-circle-xmark"></i>';
+      const iconItemEquipped = `<i class="fa-solid fa-shield-halved" data-tooltip="${game.i18n.localize('BF.Item.Equipped')}"></i>`;
+
       let icon1 = null;
       let icon2 = null;
       let icon3 = null;
 
       switch (item.type) {
+        case 'spell':
+          if (item.system.target.template.type) {
+            const long = BlackFlag.data.fields.TargetField.templateLabel(item.system.target, {style: "long"})
+            let tooltip = `${game.i18n.localize("BF.AreaOfEffect.Label")} (${long})`;
+            icon1 = `<i class="fa-solid fa-ruler-combined" data-tooltip="${tooltip}"></i>`;
+          } else if (item.system.target.affects.count > 1)
+            icon1 = `<i class="fa-solid fa-users" data-tooltip="${game.i18n.localize("BF.TARGET.Label[one]")}"></i>`;
+          else if (item.system.target.affects.count === 1)
+            icon1 = `<i class="fa-solid fa-user" data-tooltip="${game.i18n.localize("BF.TARGET.Label[one]")}"></i>`;
+
+          if (item.system.range.units === "touch")
+            icon2 = `<i class="fa-solid fa-hand" data-tooltip="${game.i18n.localize("BF.WEAPON.FIELDS.range.label")}"></i>`;
+          else if (item.system.range.value > 0)
+            icon2 = `<i class="fa-solid fa-ruler data-tooltip=${game.i18n.localize("BF.WEAPON.FIELDS.range.label")}"></i>`;
+
+          if (this.#showPreparedness && item.system.prepared)
+            icon3 = `<i class="fa-solid fa-check" data-tooltip="${game.i18n.localize("BF.Spell.Preparation.Prepared")}"></i>`;
+          else if (this.#showPreparedness)
+            icon3 = `<i class="fa-solid fa-xmark" data-tooltip="${game.i18n.localize("BF.Spell.Preparation.NotPrepared")}"></i>`;
+          break;
         case 'ammunition':
         case 'armor':
         case 'consumable':
         case 'feature':
         case 'gear':
-        case 'spell':
         case 'sundry':
         case 'tool':
         case 'weapon':
-          if (item.system.activities?.size > 0)
-            icon1 = `<i class="fa-solid fa-crosshairs" data-tooltip="${game.i18n.localize('BF.ACTIVITY.Label[one]')}"></i>`;
+          if (item.system.equipped)
+            icon1 = iconItemEquipped;
 
           if (item.system.uses?.consumeQuantity)
             icon2 = `<i class="fa-solid fa-trash" data-tooltip="${game.i18n.localize('BF.Uses.ConsumeQuantity.Label')}"></i>`
+
+          if (this.#displayActivityIcon && item.system.activities?.size > 0)
+            icon3 = `<i class="fa-solid fa-crosshairs" data-tooltip="${game.i18n.localize('BF.ACTIVITY.Label[one]')}"></i>`;
           break;
       }
 

@@ -44,6 +44,28 @@ Hooks.once('i18nInit', () => {
         ]
       },
       {
+        nestId: 'categorySpells',
+        id: 'categorySpells',
+        name: game.i18n.localize('BF.Item.Type.Spell[other]'),
+        groups: [
+          { ...groups.cantrips, nestId: "categorySpells_cantrips" },
+          { ...groups["circle-1"], nestId: "categorySpells_circle-1" },
+          { ...groups["circle-2"], nestId: "categorySpells_circle-2" },
+          { ...groups["circle-3"], nestId: "categorySpells_circle-3" },
+          { ...groups["circle-4"], nestId: "categorySpells_circle-4" },
+          { ...groups["circle-5"], nestId: "categorySpells_circle-5" },
+          { ...groups["circle-6"], nestId: "categorySpells_circle-6" },
+          { ...groups["circle-7"], nestId: "categorySpells_circle-7" },
+          { ...groups["circle-8"], nestId: "categorySpells_circle-8" },
+          { ...groups["circle-9"], nestId: "categorySpells_circle-9" },
+          { ...groups.pactSpells, nestId: "categorySpells_pactSpells" },
+          { ...groups.ritualSpells, nestId: "categorySpells_ritualSpells" },
+          { ...groups.atWillSpells, nestId: "categorySpells_atWillSpells" },
+          { ...groups.innateSpells, nestId: "categorySpells_innateSpells" },
+          { ...groups.additionalSpells, nestId: "categorySpells_additionalSpells" },
+        ]
+      },
+      {
         nestId: 'categoryEffects',
         id: 'categoryEffects',
         name: game.i18n.localize('BF.Sheet.Tab.Effects'),

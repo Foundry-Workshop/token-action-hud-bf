@@ -5,18 +5,24 @@ const constants = {
   requiredCoreModuleVersion: '2.0'
 };
 
-const defaults = {}
+const defaults = {
+  displayUnequipped: true,
+  groupGear: false,
+  maxCharacters: 0,
+  displayActivityIcon: true,
+  showOnlyPrepared: true,
+  showPreparedness: false,
+}
 
 const flags = {}
 
 const settings = {
   displayUnequipped: 'displayUnequipped',
-  groupLores: 'groupLores',
   groupGear: 'groupGear',
   maxCharacters: 'maxCharacters',
-  shiftRollMode: 'shiftRollMode',
-  bypassDefault: 'bypassDefault',
-  advantageDesc: 'showAdvantageDescription'
+  displayActivityIcon: 'displayActivityIcon',
+  showOnlyPrepared: 'showOnlyPrepared',
+  showPreparedness: 'showPreparedness',
 }
 
 const tah = {
@@ -59,6 +65,21 @@ const tah = {
     inactiveEffects: {id: 'inactiveEffects', name: 'tokenActionHud.black-flag.inactiveEffects', type: 'system'},
     conditions: {id: 'conditions', name: 'BF.Condition.Label[other]', type: 'system'},
 
+    cantrips: {id: "cantrips", name: "tokenActionHud.black-flag.cantrips", type: "system"},
+    "circle-1": {id: "circle-1", name: "tokenActionHud.black-flag.circle-1", type: "system"},
+    "circle-2": {id: "circle-2", name: "tokenActionHud.black-flag.circle-2", type: "system"},
+    "circle-3": {id: "circle-3", name: "tokenActionHud.black-flag.circle-3", type: "system"},
+    "circle-4": {id: "circle-4", name: "tokenActionHud.black-flag.circle-4", type: "system"},
+    "circle-5": {id: "circle-5", name: "tokenActionHud.black-flag.circle-5", type: "system"},
+    "circle-6": {id: "circle-6", name: "tokenActionHud.black-flag.circle-6", type: "system"},
+    "circle-7": {id: "circle-7", name: "tokenActionHud.black-flag.circle-7", type: "system"},
+    "circle-8": {id: "circle-8", name: "tokenActionHud.black-flag.circle-8", type: "system"},
+    "circle-9": {id: "circle-9", name: "tokenActionHud.black-flag.circle-9", type: "system"},
+    pactSpells: {id: "pactSpells", name: "tokenActionHud.black-flag.pactSpells", type: "system"},
+    ritualSpells: {id: "ritualSpells", name: "tokenActionHud.black-flag.ritualSpells", type: "system"},
+    atWillSpells: {id: "atWillSpells", name: "tokenActionHud.black-flag.atWillSpells", type: "system"},
+    innateSpells: {id: "innateSpells", name: "tokenActionHud.black-flag.innateSpells", type: "system"},
+    additionalSpells: {id: "additionalSpells", name: "BF.Spellcasting.Learning.Mode.Spellbook.Label", type: "system"},
 
     actions: {id: 'actions', name: 'BF.ACTIVATION.Type.Action[other]', type: 'system'},
 

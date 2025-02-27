@@ -5,14 +5,22 @@ const constants = {
   requiredCoreModuleVersion: '2.0'
 };
 
+const defaults = {
+  displayUnequipped: true,
+  groupGear: false,
+  maxCharacters: 0,
+  displayActivityIcon: true,
+  showOnlyPrepared: true,
+  showPreparedness: false,
+};
+
 const settings = {
   displayUnequipped: 'displayUnequipped',
-  groupLores: 'groupLores',
   groupGear: 'groupGear',
   maxCharacters: 'maxCharacters',
-  shiftRollMode: 'shiftRollMode',
-  bypassDefault: 'bypassDefault',
-  advantageDesc: 'showAdvantageDescription'
+  displayActivityIcon: 'displayActivityIcon',
+  showOnlyPrepared: 'showOnlyPrepared',
+  showPreparedness: 'showPreparedness',
 };
 
 const tah = {
@@ -55,6 +63,21 @@ const tah = {
     inactiveEffects: {id: 'inactiveEffects', name: 'tokenActionHud.black-flag.inactiveEffects', type: 'system'},
     conditions: {id: 'conditions', name: 'BF.Condition.Label[other]', type: 'system'},
 
+    cantrips: {id: "cantrips", name: "tokenActionHud.black-flag.cantrips", type: "system"},
+    "circle-1": {id: "circle-1", name: "tokenActionHud.black-flag.circle-1", type: "system"},
+    "circle-2": {id: "circle-2", name: "tokenActionHud.black-flag.circle-2", type: "system"},
+    "circle-3": {id: "circle-3", name: "tokenActionHud.black-flag.circle-3", type: "system"},
+    "circle-4": {id: "circle-4", name: "tokenActionHud.black-flag.circle-4", type: "system"},
+    "circle-5": {id: "circle-5", name: "tokenActionHud.black-flag.circle-5", type: "system"},
+    "circle-6": {id: "circle-6", name: "tokenActionHud.black-flag.circle-6", type: "system"},
+    "circle-7": {id: "circle-7", name: "tokenActionHud.black-flag.circle-7", type: "system"},
+    "circle-8": {id: "circle-8", name: "tokenActionHud.black-flag.circle-8", type: "system"},
+    "circle-9": {id: "circle-9", name: "tokenActionHud.black-flag.circle-9", type: "system"},
+    pactSpells: {id: "pactSpells", name: "tokenActionHud.black-flag.pactSpells", type: "system"},
+    ritualSpells: {id: "ritualSpells", name: "tokenActionHud.black-flag.ritualSpells", type: "system"},
+    atWillSpells: {id: "atWillSpells", name: "tokenActionHud.black-flag.atWillSpells", type: "system"},
+    innateSpells: {id: "innateSpells", name: "tokenActionHud.black-flag.innateSpells", type: "system"},
+    additionalSpells: {id: "additionalSpells", name: "BF.Spellcasting.Learning.Mode.Spellbook.Label", type: "system"},
 
     actions: {id: 'actions', name: 'BF.ACTIVATION.Type.Action[other]', type: 'system'},
 
@@ -354,6 +377,28 @@ Hooks.once('i18nInit', () => {
         ]
       },
       {
+        nestId: 'categorySpells',
+        id: 'categorySpells',
+        name: game.i18n.localize('BF.Item.Type.Spell[other]'),
+        groups: [
+          { ...groups.cantrips, nestId: "categorySpells_cantrips" },
+          { ...groups["circle-1"], nestId: "categorySpells_circle-1" },
+          { ...groups["circle-2"], nestId: "categorySpells_circle-2" },
+          { ...groups["circle-3"], nestId: "categorySpells_circle-3" },
+          { ...groups["circle-4"], nestId: "categorySpells_circle-4" },
+          { ...groups["circle-5"], nestId: "categorySpells_circle-5" },
+          { ...groups["circle-6"], nestId: "categorySpells_circle-6" },
+          { ...groups["circle-7"], nestId: "categorySpells_circle-7" },
+          { ...groups["circle-8"], nestId: "categorySpells_circle-8" },
+          { ...groups["circle-9"], nestId: "categorySpells_circle-9" },
+          { ...groups.pactSpells, nestId: "categorySpells_pactSpells" },
+          { ...groups.ritualSpells, nestId: "categorySpells_ritualSpells" },
+          { ...groups.atWillSpells, nestId: "categorySpells_atWillSpells" },
+          { ...groups.innateSpells, nestId: "categorySpells_innateSpells" },
+          { ...groups.additionalSpells, nestId: "categorySpells_additionalSpells" },
+        ]
+      },
+      {
         nestId: 'categoryEffects',
         id: 'categoryEffects',
         name: game.i18n.localize('BF.Sheet.Tab.Effects'),
@@ -403,8 +448,12 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
    * @extends ActionHandler
    */
   ActionHandlerBlackFlag = class ActionHandlerBlackFlag extends coreModule.api.ActionHandler {
-    #maxCharacters;
-    #groupGear;
+    #maxCharacters = defaults.maxCharacters;
+    #groupGear = defaults.groupGear;
+    #displayUnequipped = defaults.displayUnequipped;
+    #displayActivityIcon = defaults.displayActivityIcon;
+    #showOnlyPrepared = defaults.showOnlyPrepared;
+    #showPreparedness = defaults.showPreparedness;
 
     #findGroup(data = {}) {
       if (data?.nestId) {
@@ -426,21 +475,24 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
      * @param {array} groupIds
      */
     async buildSystemActions(groupIds) {
+      this.#maxCharacters = getSetting(settings.maxCharacters);
       this.#groupGear = getSetting(settings.groupGear);
+      this.#displayUnequipped = getSetting(settings.displayUnequipped);
+      this.#displayActivityIcon = getSetting(settings.displayActivityIcon);
+      this.#showOnlyPrepared = getSetting(settings.showOnlyPrepared);
+      this.#showPreparedness = getSetting(settings.showPreparedness);
 
-      // Set items variables
-      // Declaring multiple arrays, while taking more memory for sure, should be better
-      // than having to reconvert map to array to map every time I want to filter
       if (this.actor) {
         const physicalItems = this.actor.items.filter(i => i.system.isPhysical);
-        const inventory = physicalItems.filter(i => !i.system.container);
+        const inventory = physicalItems.filter(i => !i.system.container && (this.#displayUnequipped ? true : i.system.equipped));
         const itemsInContainers = physicalItems.filter(i => !!i.system.container);
         const features = this.actor.items.filter(i => i.type === 'feature' || i.type === 'talent');
+        const spells = this.actor.items.filter(i => i.type === 'spell');
 
-        this.items = coreModule.api.Utils.sortItemsByName(this.actor.items);
         this.inventory = coreModule.api.Utils.sortItemsByName(inventory);
         this.itemsInContainers = coreModule.api.Utils.sortItemsByName(itemsInContainers);
         this.features = coreModule.api.Utils.sortItemsByName(features);
+        this.spells = coreModule.api.Utils.sortItemsByName(spells);
       }
 
       if (this.actor) {
@@ -462,6 +514,7 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       await this.#buildToolChecks();
       await this.#buildVehicleChecks();
       await this.#buildFeatures();
+      await this.#buildSpells();
       await this.#buildEffects();
       await this.#buildConditions();
       await this.#buildInventory();
@@ -479,13 +532,12 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       await this.#buildUtility();
     }
 
+    //#region Checks & Saves
     async #buildAbilities() {
-
       await this.#buildAbilitiesGroup("ability", "checks");
       await this.#buildAbilitiesGroup("save", "saves");
     }
 
-    //#region Checks & Saves
     async #buildAbilitiesGroup(actionType, groupId) {
       const abilities = this.actor?.system.abilities || CONFIG.BlackFlag.abilities;
 
@@ -706,9 +758,9 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       }
 
       await Promise.all([
-        this.#buildActions(passiveEffects, 'effect','passiveEffects'),
-        this.#buildActions(temporaryEffects, 'effect','temporaryEffects'),
-        this.#buildActions(inactiveEffects, 'effect','inactiveEffects'),
+        this.#buildActions(passiveEffects, 'effect', 'passiveEffects'),
+        this.#buildActions(temporaryEffects, 'effect', 'temporaryEffects'),
+        this.#buildActions(inactiveEffects, 'effect', 'inactiveEffects'),
       ]);
     }
 
@@ -744,6 +796,79 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
 
     //#endregion
 
+    //#region Spells
+
+
+    async #buildSpells() {
+      if (this.spells.size === 0) return;
+
+      const spellsMap = new Map();
+
+      for (const [key, item] of this.spells) {
+        if (this.#showOnlyPrepared && !item.system.prepared) continue;
+        // if (!this.#isUsableItem(item) || !this.#isUsableSpell(item)) continue;
+        let type = null;
+
+        if (item.system.linkedActivity && item.system.linkedActivity.displayInSpellbook)
+          type = "additionalSpells";
+        else if (item.system.tags.has('ritual'))
+          type = "ritualSpells";
+        else switch (item.getFlag("black-flag", "relationship.mode")) {
+          case "atWill":
+            type = "atWillSpells"; break;
+          case "innate":
+            type = "innateSpells"; break;
+          case "pact":
+            type = "pactSpells"; break;
+          default: {
+            switch (item.system.circle.base) {
+              case 0:
+                type = "cantrips"; break;
+              case 1:
+                type = "circle-1"; break;
+              case 2:
+                type = "circle-2"; break;
+              case 3:
+                type = "circle-3"; break;
+              case 4:
+                type = "circle-4"; break;
+              case 5:
+                type = "circle-5"; break;
+              case 6:
+                type = "circle-6"; break;
+              case 7:
+                type = "circle-7"; break;
+              case 8:
+                type = "circle-8"; break;
+              case 9:
+                type = "circle-9"; break;
+            }
+          }
+        }
+
+        if (!type) continue;
+
+        const circleMap = spellsMap.get(type) ?? new Map();
+        circleMap.set(key, item);
+        spellsMap.set(type, circleMap);
+      }
+
+      for (const [circle, slot] of Object.entries(this.actor.system.spellcasting.slots)) {
+        const value = slot?.value ?? '∞';
+        const max = slot?.max ?? '∞';
+
+        const groupData = {
+          id: circle,
+          info: {info1: {class: "tah-spotlight", text:  `${value}/${max}`}}
+        };
+
+        this.addGroupInfo(groupData);
+      }
+
+      return this.#addActionsFromMap('spell', spellsMap);
+    }
+
+    //#endregion
 
     //#region Inventory
     /**
@@ -1025,6 +1150,11 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
             info.title = game.i18n.localize('BF.Uses.Label');
           }
           break;
+        case 'spell':
+          info.class = 'nowrap';
+          info.text = item.system.range.label;
+          info.title = game.i18n.localize("BF.WEAPON.FIELDS.range.label");
+          break;
         case 'ammunition':
         case 'armor':
         case 'consumable':
@@ -1083,18 +1213,12 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
     }
 
     #getProficiencyIcon(proficiency) {
-      // return proficiency?.hasProficiency ? `
       return proficiency ? `
         <div class="proficiency-selector" data-multiplier="${proficiency.multiplier}"
             data-rounding="${proficiency.rounding}" aria-label="${proficiency.label}">
                 <blackFlag-icon src="systems/black-flag/artwork/interface/proficiency.svg" inert></blackFlag-icon>
         </div>
 ` : '';
-
-
-      // const title = CONFIG.DND5E.proficiencyLevels[level] ?? "";
-      // const icon = PROFICIENCY_LEVEL_ICON[level];
-      // return (icon) ? `<i class="${icon}" title="${title}"></i>` : "";
     }
 
     #getListName(actionType, actionName) {
@@ -1105,6 +1229,16 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
     }
 
     #getTooltip(item) {
+      if (this.tooltipsSetting === "none") return "";
+
+      if (this.tooltipsSetting === "full" && foundry.utils.getType(item.system.richTooltip) === "function") {
+        const tooltip = {};
+        tooltip.content = `<section class="loading" data-uuid="${item.uuid}"><i class="fas fa-spinner fa-spin-pulse"></i></section>`;
+        tooltip.class = "black-flag black-flag-tooltip item-tooltip";
+
+        return tooltip;
+      }
+
       switch (item.type) {
         default:
           return item.name
@@ -1120,25 +1254,49 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
     }
 
     #getItemIcons(item) {
+      const iconItemEquipped = `<i class="fa-solid fa-shield-halved" data-tooltip="${game.i18n.localize('BF.Item.Equipped')}"></i>`;
+
       let icon1 = null;
       let icon2 = null;
       let icon3 = null;
 
       switch (item.type) {
+        case 'spell':
+          if (item.system.target.template.type) {
+            const long = BlackFlag.data.fields.TargetField.templateLabel(item.system.target, {style: "long"});
+            let tooltip = `${game.i18n.localize("BF.AreaOfEffect.Label")} (${long})`;
+            icon1 = `<i class="fa-solid fa-ruler-combined" data-tooltip="${tooltip}"></i>`;
+          } else if (item.system.target.affects.count > 1)
+            icon1 = `<i class="fa-solid fa-users" data-tooltip="${game.i18n.localize("BF.TARGET.Label[one]")}"></i>`;
+          else if (item.system.target.affects.count === 1)
+            icon1 = `<i class="fa-solid fa-user" data-tooltip="${game.i18n.localize("BF.TARGET.Label[one]")}"></i>`;
+
+          if (item.system.range.units === "touch")
+            icon2 = `<i class="fa-solid fa-hand" data-tooltip="${game.i18n.localize("BF.WEAPON.FIELDS.range.label")}"></i>`;
+          else if (item.system.range.value > 0)
+            icon2 = `<i class="fa-solid fa-ruler data-tooltip=${game.i18n.localize("BF.WEAPON.FIELDS.range.label")}"></i>`;
+
+          if (this.#showPreparedness && item.system.prepared)
+            icon3 = `<i class="fa-solid fa-check" data-tooltip="${game.i18n.localize("BF.Spell.Preparation.Prepared")}"></i>`;
+          else if (this.#showPreparedness)
+            icon3 = `<i class="fa-solid fa-xmark" data-tooltip="${game.i18n.localize("BF.Spell.Preparation.NotPrepared")}"></i>`;
+          break;
         case 'ammunition':
         case 'armor':
         case 'consumable':
         case 'feature':
         case 'gear':
-        case 'spell':
         case 'sundry':
         case 'tool':
         case 'weapon':
-          if (item.system.activities?.size > 0)
-            icon1 = `<i class="fa-solid fa-crosshairs" data-tooltip="${game.i18n.localize('BF.ACTIVITY.Label[one]')}"></i>`;
+          if (item.system.equipped)
+            icon1 = iconItemEquipped;
 
           if (item.system.uses?.consumeQuantity)
             icon2 = `<i class="fa-solid fa-trash" data-tooltip="${game.i18n.localize('BF.Uses.ConsumeQuantity.Label')}"></i>`;
+
+          if (this.#displayActivityIcon && item.system.activities?.size > 0)
+            icon3 = `<i class="fa-solid fa-crosshairs" data-tooltip="${game.i18n.localize('BF.ACTIVITY.Label[one]')}"></i>`;
           break;
       }
 
@@ -1248,6 +1406,7 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
           if (!token) return;
           await this.#toggleCondition(actor, token, actionId);
           break;
+        case "spell":
         case "feature":
         case "item":
           if (this.isRenderItem()) this.renderItem(actor, actionId);
@@ -1390,13 +1549,57 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
  * @param coreUpdate
  */
 function registerSettingsCoreUpdate(coreUpdate) {
+  game.settings.register(constants.moduleId, settings.displayUnequipped, {
+    name: game.i18n.localize('tokenActionHud.black-flag.settings.displayUnequipped.name'),
+    hint: game.i18n.localize('tokenActionHud.black-flag.settings.displayUnequipped.hint'),
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: defaults.displayUnequipped,
+    onChange: (value) => {
+      coreUpdate(value);
+    }
+  });
   game.settings.register(constants.moduleId, settings.groupGear, {
     name: game.i18n.localize('tokenActionHud.black-flag.settings.groupGear.name'),
     hint: game.i18n.localize('tokenActionHud.black-flag.settings.groupGear.hint'),
     scope: 'client',
     config: true,
     type: Boolean,
-    default: false,
+    default: defaults.groupGear,
+    onChange: (value) => {
+      coreUpdate(value);
+    }
+  });
+  game.settings.register(constants.moduleId, settings.displayActivityIcon, {
+    name: game.i18n.localize('tokenActionHud.black-flag.settings.displayActivityIcon.name'),
+    hint: game.i18n.localize('tokenActionHud.black-flag.settings.displayActivityIcon.hint'),
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: defaults.displayActivityIcon,
+    onChange: (value) => {
+      coreUpdate(value);
+    }
+  });
+  game.settings.register(constants.moduleId, settings.showOnlyPrepared, {
+    name: game.i18n.localize('tokenActionHud.black-flag.settings.showOnlyPrepared.name'),
+    hint: game.i18n.localize('tokenActionHud.black-flag.settings.showOnlyPrepared.hint'),
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: defaults.showOnlyPrepared,
+    onChange: (value) => {
+      coreUpdate(value);
+    }
+  });
+  game.settings.register(constants.moduleId, settings.showPreparedness, {
+    name: game.i18n.localize('tokenActionHud.black-flag.settings.showPreparedness.name'),
+    hint: game.i18n.localize('tokenActionHud.black-flag.settings.showPreparedness.hint'),
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: defaults.showPreparedness,
     onChange: (value) => {
       coreUpdate(value);
     }
@@ -1407,7 +1610,7 @@ function registerSettingsCoreUpdate(coreUpdate) {
     scope: 'client',
     config: true,
     type: Number,
-    default: 0,
+    default: defaults.maxCharacters,
     onChange: (value) => {
       coreUpdate(value);
     }

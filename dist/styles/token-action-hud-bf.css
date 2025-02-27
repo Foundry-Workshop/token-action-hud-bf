@@ -6,5 +6,8 @@
   --blank-color: rgba(209, 185, 163, 0.3);
   --proficient-color: var(--tah-text-primary-color);
 }
+#token-action-hud .tah-info-container .tah-info.nowrap {
+  white-space: nowrap;
+}
 
 /*# sourceMappingURL=token-action-hud-bf.css.map */

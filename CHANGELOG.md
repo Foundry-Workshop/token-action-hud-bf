@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.0.4
+- First release candidate
+- Added Spells Tab
+  - Cantrips
+  - Circles 1-9
+  - Pact Spells
+  - Ritual Spells
+  - At Will Spells
+  - Innate Spells
+  - Additional Spells
+- Icons on Spells denoting their Target, Range and Preparedness
+- Additional Text on Spells showing values of Range and Targets
+
 ## v0.0.3
 - Module currently offers:
   - Displays actions
