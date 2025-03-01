@@ -60,6 +60,7 @@ You can also [join my Discord – Foundry Workshop](https://discord.gg/XkTFv8DRD
 
 ## Acknowledgments
 
+* Thanks to Sureen Ink for commissioning the creation of this module!
 * Thanks to Russell (@Larkinabout) for creating the [Token Action HUD Core](https://foundryvtt.com/packages/token-action-hud-core)!
 
 ## License
