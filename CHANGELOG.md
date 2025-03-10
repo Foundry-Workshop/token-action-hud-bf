@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.1.1
+- Fixed Rich tooltips not showing despite setting
+
 ## v0.1.0
 - Initial Release
 

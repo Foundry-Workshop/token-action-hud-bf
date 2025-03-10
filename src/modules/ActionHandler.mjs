@@ -15,6 +15,7 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
     #displayActivityIcon = defaults.displayActivityIcon;
     #showOnlyPrepared = defaults.showOnlyPrepared;
     #showPreparedness = defaults.showPreparedness;
+    #tooltipsSetting;
 
     #findGroup(data = {}) {
       if (data?.nestId) {
@@ -42,6 +43,7 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
       this.#displayActivityIcon = getSetting(settings.displayActivityIcon);
       this.#showOnlyPrepared = getSetting(settings.showOnlyPrepared);
       this.#showPreparedness = getSetting(settings.showPreparedness);
+      this.#tooltipsSetting = game.settings.get("token-action-hud-core", "tooltips");
 
       if (this.actor) {
         const physicalItems = this.actor.items.filter(i => i.system.isPhysical);
@@ -799,9 +801,10 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
     }
 
     #getTooltip(item) {
-      if (this.tooltipsSetting === "none") return "";
+      debugger;
+      if (this.#tooltipsSetting === "none") return "";
 
-      if (this.tooltipsSetting === "full" && foundry.utils.getType(item.system.richTooltip) === "function") {
+      if (this.#tooltipsSetting === "full" && foundry.utils.getType(item.system.richTooltip) === "function") {
         const tooltip = {};
         tooltip.content = `<section class="loading" data-uuid="${item.uuid}"><i class="fas fa-spinner fa-spin-pulse"></i></section>`;
         tooltip.class = "black-flag black-flag-tooltip item-tooltip";
@@ -874,11 +877,11 @@ Hooks.once('tokenActionHudCoreApiReady', async (coreModule) => {
     }
 
     #getConditionTooltipData(id, name) {
-      if (this.tooltipsSetting === "none") return "";
+      if (this.#tooltipsSetting === "none") return "";
 
       const condition = CONFIG.BlackFlag.conditions[id];
 
-      if (this.tooltipsSetting === "nameOnly" || !condition?.reference) return name;
+      if (this.#tooltipsSetting === "nameOnly" || !condition?.reference) return name;
 
       const tooltip = {};
       tooltip.content = `<section class="loading" data-uuid="${condition.reference}"><i class="fas fa-spinner fa-spin-pulse"></i></section>`;
